@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
-	"strings"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/ziutek/telnet"
@@ -15,11 +13,12 @@ import (
 )
 
 type options struct {
-	Addr           string `short:"a" long:"addr"  description:"Address to listen" default:"localhost:2222"`
-	HostKey        string `short:"k" long:"key"   description:"Path to the host key"`
-	AutoLogin      bool   `short:"l" long:"login" description:"Enable auto login"`
-	LoginPrompt    string `long:"login-prompt"    description:"Login prompt (default: \"login: \")" default:"login: " default-mask:"-"`
-	PasswordPrompt string `long:"password-prompt" description:"Password prompt (default: \"Password: \")" default:"Password: " default-mask:"-"`
+	Addr           string `short:"a" long:"addr"   description:"Address to listen" default:":2222"`
+	Target         string `short:"t" long:"target" description:"Telnet target address" default:"localhost:23"`
+	HostKey        string `short:"k" long:"key"    description:"Path to the host key"`
+	AutoLogin      bool   `short:"l" long:"login"  description:"Enable auto login"`
+	LoginPrompt    string `long:"login-prompt"     description:"Login prompt (default: \"login: \")" default:"login: " default-mask:"-"`
+	PasswordPrompt string `long:"password-prompt"  description:"Password prompt (default: \"Password: \")" default:"Password: " default-mask:"-"`
 }
 
 func start(opts options) error {
@@ -39,36 +38,26 @@ func start(opts options) error {
 	}
 
 	server.Handle(func(s ssh.Session) {
-		var username, password, host string
+		var username, password string
 		if opts.AutoLogin {
-			t := strings.SplitN(s.User(), "@", 2)
-			if len(t) != 2 {
-				fmt.Fprintf(os.Stderr, "Unable to parse username from '%s'.\n", s.User())
-				s.Exit(1)
-				return
-			}
-
-			username, host = t[0], t[1]
+			username = s.User()
 			password = s.Context().Value("password").(string)
-		} else {
-			host = s.User()
 		}
 
 		_, _, isPty := s.Pty()
 		if isPty {
 
-			addr := net.JoinHostPort(host, "23")
-			fmt.Printf("Connecting to %s\n", addr)
+			fmt.Printf("Connecting to %s\n", opts.Target)
 
-			conn, err := telnet.Dial("tcp", addr)
+			conn, err := telnet.Dial("tcp", opts.Target)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to connect to %s.\n", addr)
+				fmt.Fprintf(os.Stderr, "Unable to connect to %s.\n", opts.Target)
 				s.Exit(1)
 				return
 			}
 			defer func() {
 				conn.Close()
-				fmt.Printf("Connection to %s closed\n", addr)
+				fmt.Printf("Connection to %s closed\n", opts.Target)
 			}()
 
 			if opts.AutoLogin {

@@ -1,52 +1,32 @@
 # ssh2telnet
-Proxy ssh connection into telnet.
+Proxy ssh connection into telnet. Forked from [haccht/ssh2telnet](https://github.com/haccht/ssh2telnet).
+Mine works in a Docker container and only with a fixed target.
 
 ## Options
 
 ```
-$ ssh2telnet -h
+$ docker run sp00l/ssh2telnet -h
 Usage:
   ssh2telnet [OPTIONS]
 
 Application Options:
-  -a, --addr=            Address to listen (default: localhost:2222)
+  -a, --addr=            Address to listen (default: :2222)
+  -t, --target=          Telnet target address (default: localhost:23)
   -k, --key=             Path to the host key
   -l, --login            Enable auto login
       --login-prompt=    Login prompt (default: "login: ")
       --password-prompt= Password prompt (default: "Password: ")
 
 Help Options:
-  -h, --help  Show this help message
+  -h, --help             Show this help message
 ```
 ## Basic Usage
 
 Start a ssh server.
 
 ```
-$ ssh2telnet -a :2222
+$ docker run -p 2222:2222 sp00l/ssh2telnet -t sometelnetserver.com:23
 Starting ssh server on :2222
-```
-
-Connect the server from another terminal.
-The specified username will be interpeted into the hostname.
-Now the proxied telnet session is attached to the target host.
-
-```
-$ ssh localhost -p 2222 -l 192.168.1.1
-
-
-User Access Verification
-
-Username: vagrant
-Password:
-
-
-RP/0/RSP0/CPU0:R1#show clock
-Thu Nov 11 00:00:00.000 JST
-00:00:00:000 JST Thu Nov 11 2021
-
-RP/0/RSP0/CPU0:R1#exit
-Connection to localhost closed.
 ```
 
 ## Auto Login
@@ -55,23 +35,6 @@ ssh2telnet also comes with the auto login feature.
 Start a ssh server with the `--login` option and specify `--login-prompt` and/or `--password-prompt` if necessary.
 
 ```
-$ ssh2telnet -a :2222 -l --login-prompt 'Username: '
+$ docker run -p 2222:2222 sp00l/ssh2telnet -t sometelnetserver.com:23 -l --login-prompt 'Username: '
 Starting ssh server on :2222
-```
-
-Connect the server from another terminal.
-The specified username will be interpeted into 'username@hostname'.
-Login password for the target host is also prompted afterward.
-
-```
-$ ssh localhost -p 2222 -l vagrant@192.168.1.1
-vagrant@192.168.1.1@localhost's password:
-
-
-RP/0/RSP0/CPU0:R1#show clock
-Thu Nov 11 00:00:00.000 JST
-00:00:00:000 JST Thu Nov 11 2021
-
-RP/0/RSP0/CPU0:R1#exit
-Connection to localhost closed.
 ```
