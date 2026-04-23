@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/gliderlabs/ssh"
@@ -27,6 +27,7 @@ func start(opts options) error {
 	if _, err := os.Stat(opts.HostKey); err == nil {
 		hostKeyFile := ssh.HostKeyFile(opts.HostKey)
 		server.SetOption(hostKeyFile)
+		slog.Info("using host key", "hostkey", opts.HostKey)
 	}
 
 	if opts.AutoLogin {
@@ -35,29 +36,37 @@ func start(opts options) error {
 			return true
 		})
 		server.SetOption(passwordAuth)
+		slog.Info("using auto login", "loginprompt", opts.LoginPrompt, "passwordprompt", opts.PasswordPrompt)
 	}
 
 	server.Handle(func(s ssh.Session) {
 		var username, password string
+		username = s.User()
+
+		l := slog.With(
+			"id", s.Context().Value(ssh.ContextKeySessionID).(string)[:8],
+			"user", username,
+			"remote_ip", s.RemoteAddr().String(),
+		)
+
 		if opts.AutoLogin {
-			username = s.User()
 			password = s.Context().Value("password").(string)
 		}
+
+		l.Info("new session", "status", "started")
 
 		_, _, isPty := s.Pty()
 		if isPty {
 
-			fmt.Printf("Connecting to %s\n", opts.Target)
-
 			conn, err := telnet.Dial("tcp", opts.Target)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to connect to %s.\n", opts.Target)
+				l.Error("unable to connect to target", "status", "closed", "target", opts.Target)
 				s.Exit(1)
 				return
 			}
 			defer func() {
 				conn.Close()
-				fmt.Printf("Connection to %s closed\n", opts.Target)
+				l.Info("session closed", "status", "closed")
 			}()
 
 			if opts.AutoLogin {
@@ -79,25 +88,30 @@ func start(opts options) error {
 
 			<-sigChan
 		} else {
-			fmt.Fprintf(os.Stderr, "No PTY requested.\n")
+			l.Error("no pty requested", "status", "closed")
 			s.Exit(1)
 		}
 	})
 
-	fmt.Printf("Starting ssh server on %s\n", opts.Addr)
+	slog.Info("starting ssh server", "listen", opts.Addr, "target", opts.Target)
 	return server.ListenAndServe()
 }
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	var opts options
 	if _, err := flags.Parse(&opts); err != nil {
 		if fe, ok := err.(*flags.Error); ok && fe.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
-		log.Fatal(err)
+		slog.Error("fatal error", "error", err)
+		os.Exit(1)
 	}
 
 	if err := start(opts); err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error", "error", err)
+		os.Exit(1)
 	}
 }
