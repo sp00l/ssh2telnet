@@ -13,6 +13,7 @@ Application Options:
   -a, --addr=            Address to listen (default: :2222)
   -t, --target=          Telnet target address (default: localhost:23)
   -k, --key=             Path to the host key
+  -c, --clear            Send ANSI clear-screen sequence after a login
   -l, --login            Enable auto login
       --login-prompt=    Login prompt (default: "login: ")
       --password-prompt= Password prompt (default: "Password: ")

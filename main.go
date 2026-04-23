@@ -16,6 +16,7 @@ type options struct {
 	Addr           string `short:"a" long:"addr"   description:"Address to listen" default:":2222"`
 	Target         string `short:"t" long:"target" description:"Telnet target address" default:"localhost:23"`
 	HostKey        string `short:"k" long:"key"    description:"Path to the host key"`
+	ClearScreen    bool   `short:"c" long:"clear"  description:"Send ANSI clear-screen sequence after a login"`
 	AutoLogin      bool   `short:"l" long:"login"  description:"Enable auto login"`
 	LoginPrompt    string `long:"login-prompt"     description:"Login prompt (default: \"login: \")" default:"login: " default-mask:"-"`
 	PasswordPrompt string `long:"password-prompt"  description:"Password prompt (default: \"Password: \")" default:"Password: " default-mask:"-"`
@@ -57,6 +58,10 @@ func start(opts options) error {
 
 		_, _, isPty := s.Pty()
 		if isPty {
+
+			if opts.ClearScreen {
+				io.WriteString(s, "\x1b[2J\x1b[H")
+			}
 
 			conn, err := telnet.Dial("tcp", opts.Target)
 			if err != nil {
