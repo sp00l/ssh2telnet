@@ -1,4 +1,4 @@
-FROM golang:alpine3.22 AS builder
+FROM golang:alpine3.24 AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o ssh2telnet .
 
-FROM gcr.io/distroless/static-debian12
+FROM gcr.io/distroless/static-debian13
 
 COPY --from=builder /app/ssh2telnet /
 
