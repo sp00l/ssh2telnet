@@ -1,6 +1,6 @@
-module github.com/sp00l/ssh2telnet 
+module github.com/sp00l/ssh2telnet
 
-go 1.26
+go 1.27
 
 require (
 	github.com/gliderlabs/ssh v0.3.8
@@ -10,6 +10,6 @@ require (
 
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 )
